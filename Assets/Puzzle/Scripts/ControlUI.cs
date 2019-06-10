@@ -9,10 +9,10 @@ using UnityEngine.Advertisements;
 
 public class ControlUI : MonoBehaviour {
 
-    DescargarImagenes descargarImagenes;
+    LoadImagenes loadImagenes;
     Analiticas analiticas;
 
-    public GameObject testImage = null;
+    public GameObject[] testImage = null;
     public bool diyMode = false;
 
     public GameObject panelInit;
@@ -35,12 +35,12 @@ public class ControlUI : MonoBehaviour {
     /// <summary>
     /// 加载新图包
     /// </summary>
-    bool cargandoNuevoPack;
+    bool loadNewPack;
     public RectTransform panelScroll;
     ScrollRect panelScrollComponent;
     public Image[] pedazoVistaPrevia;
     public Image[] tickDificultad;
-    int ultimaDificultadSeleccionada = 0;
+    int theLastDifficultySelection = 0;
     public int puzzlePreseleccionado;
 
     bool mensajeCheckeoWifi;
@@ -76,7 +76,7 @@ public class ControlUI : MonoBehaviour {
     bool puedeMostrarAnuncioExtra;
 
     public GameObject[] prefabsPuzzle;
-    GameObject nuevoPuzzle;
+    GameObject newPuzzle;
 
     public GameObject tickSort;
     public GameObject tickGuia;
@@ -89,7 +89,7 @@ public class ControlUI : MonoBehaviour {
     Sprite diyImageColor = null;
     Sprite diyImageGray = null;
 
-
+    //数字资源整合
     [Header("SFX")]
     public AudioSource clickSFX;
     public AudioSource completeSFX;
@@ -101,7 +101,11 @@ public class ControlUI : MonoBehaviour {
     public AudioSource desplegarSFX;
 
     void Start() {
-        descargarImagenes = GetComponent<DescargarImagenes>();
+
+        //删除本地缓存数据
+        //PlayerPrefs.DeleteAll();
+
+        loadImagenes = GetComponent<LoadImagenes>();
         analiticas = GetComponent<Analiticas>();
         panelScrollComponent = panelScroll.GetComponent<ScrollRect>();
         contornoBoton = new Image[imagenBoton.Length];
@@ -113,12 +117,21 @@ public class ControlUI : MonoBehaviour {
         imagenesEnGris = new Sprite[imagenBoton.Length];
 
         colorDificultad = new Color[6];
-        colorDificultad[0] = new Color(0.93f, 0.93f, 0.93f, 1); //Gris
-        colorDificultad[1] = new Color(0.73f, 1, 0.79f, 1); //Verde 
-        colorDificultad[2] = new Color(1, 1, 0.73f, 1); //Amarillo 
-        colorDificultad[3] = new Color(1, 0.87f, 0.73f, 1); //Naranja 
-        colorDificultad[4] = new Color(1, 0.73f, 0.73f, 1); //Rojo
-        colorDificultad[5] = new Color(0.87f, 0.73f, 1, 1); //Morado 
+        colorDificultad[0] = new Color(0.93f, 0.93f, 0.93f, 1); //灰色
+        colorDificultad[1] = new Color(0.73f, 1, 0.79f, 1); //绿色
+        colorDificultad[2] = new Color(1, 1, 0.73f, 1); //黄色
+        colorDificultad[3] = new Color(1, 0.87f, 0.73f, 1); //橙色
+        colorDificultad[4] = new Color(1, 0.73f, 0.73f, 1); //红色
+        colorDificultad[5] = new Color(0.87f, 0.73f, 1, 1); //紫色
+
+        //test
+        //this.TestConvertToGrayImage();
+    }
+
+    private void TestConvertToGrayImage() {
+        Image test2 = this.testImage[1].GetComponent<Image>();
+        Texture2D tex = test2.sprite.texture as Texture2D;
+        test2.sprite = this.TextureToSprite(this.ConvertToGrayscale2(tex));
     }
 
     void Update() {
@@ -132,24 +145,24 @@ public class ControlUI : MonoBehaviour {
     }
 
     void AjustarNuevoPack() {
-        Debug.Log("There is a total of " + descargarImagenes.countPuzzlesTotal + " images");
+        Debug.Log("There is a total of " + loadImagenes.countPuzzlesTotal + " images");
         if (packsCargados == 1) {
             for (int i = 0; i < packBotones[packsCargados - 1].transform.childCount; i++) {
-                if (i + 1 > descargarImagenes.countPuzzlesTotal) {
+                if (i + 1 > loadImagenes.countPuzzlesTotal) {
                     packBotones[0].transform.GetChild(i).gameObject.SetActive(false);
                 }
             }
         }
         else if (packsCargados == 2) {
             for (int i = 0; i < packBotones[packsCargados - 1].transform.childCount; i++) {
-                if (i + 1 + 4/*第一包中的4个*/ > descargarImagenes.countPuzzlesTotal) {
+                if (i + 1 + 4/*第一包中的4个*/ > loadImagenes.countPuzzlesTotal) {
                     packBotones[packsCargados - 1].transform.GetChild(i).gameObject.SetActive(false);
                 }
             }
         }
         else if (packsCargados >= 3) {
             for (int i = 0; i < packBotones[packsCargados - 1].transform.childCount; i++) {
-                if (i + 1 + 4 + (5 * (packsCargados - 2))/*以下5个包，-2因为我们已经在第3包中*/ > descargarImagenes.countPuzzlesTotal) {
+                if (i + 1 + 4 + (5 * (packsCargados - 2))/*以下5个包，-2因为我们已经在第3包中*/ > loadImagenes.countPuzzlesTotal) {
                     packBotones[packsCargados - 1].transform.GetChild(i).gameObject.SetActive(false);
                 }
             }
@@ -187,7 +200,7 @@ public class ControlUI : MonoBehaviour {
             //选取文件成功后进行的操作
             //Debug.Log(openFileName.file);
             //Debug.Log(openFileName.fileTitle);
-            this.descargarImagenes.loadDiyPack("file://" + openFileName.file);
+            this.loadImagenes.loadDiyPack("file://" + openFileName.file);
         }
     }
 
@@ -198,20 +211,20 @@ public class ControlUI : MonoBehaviour {
         //显示自定义图品图片按钮
         this.diyImageButton.SetActive(true);
 
-        if (!cargandoNuevoPack) {
+        if (!loadNewPack) {
             //对于0包
             if (packsCargados == 0) {
                 botonPlay.interactable = false;
-                if (!descargarImagenes.CheckInternet()) {
+                if (!loadImagenes.CheckInternet()) {
                     bool tienePackCompletoEnPrefs = true;
                     for (int i = 0; i < 4; i++) {
-                        if (PlayerPrefs.GetString("puzzleGuardado" + i, "") == "") {
+                        if (PlayerPrefs.GetString("puzzleGuard" + i, "") == "") {
                             tienePackCompletoEnPrefs = false;
                         }
                     }
                     if (tienePackCompletoEnPrefs) {
-                        cargandoNuevoPack = true;
-                        descargarImagenes.CargarPack();
+                        loadNewPack = true;
+                        loadImagenes.LoadingPack();
                         botonPlay.transform.GetChild(0).GetComponent<Animator>().enabled = true;
                     }
                     else {
@@ -223,43 +236,43 @@ public class ControlUI : MonoBehaviour {
                 else {
                     bool tienePackCompletoEnPrefs = true;
                     for (int i = 0; i < 4; i++) {
-                        if (PlayerPrefs.GetString("puzzleGuardado" + i, "") == "") {
+                        if (PlayerPrefs.GetString("puzzleGuard" + i, "") == "") {
                             tienePackCompletoEnPrefs = false;
                         }
                     }
 
                     if (tienePackCompletoEnPrefs) {
-                        cargandoNuevoPack = true;
-                        descargarImagenes.CargarPack();
+                        loadNewPack = true;
+                        loadImagenes.LoadingPack();
                         botonPlay.transform.GetChild(0).GetComponent<Animator>().enabled = true;
                     }
-                    else if (!descargarImagenes.connectToWifi && !mensajeCheckeoWifi) {
+                    else if (!loadImagenes.connectToWifi && !mensajeCheckeoWifi) {
                         errorSFX.Play();
                         noticeDownload.gameObject.SetActive(true);
                     }
-                    else if (!descargarImagenes.connectInternet) {
-                        cargandoNuevoPack = true;
-                        descargarImagenes.CargarLista();
+                    else if (!loadImagenes.connectInternet) {
+                        loadNewPack = true;
+                        loadImagenes.LoadingList();
                         botonPlay.transform.GetChild(0).GetComponent<Animator>().enabled = true;
                     }
                     else {
-                        cargandoNuevoPack = true;
-                        descargarImagenes.CargarPack();
+                        loadNewPack = true;
+                        loadImagenes.LoadingPack();
                         botonPlay.transform.GetChild(0).GetComponent<Animator>().enabled = true;
                     }
                 }
             }
             else { //对于剩下的包
-                if (!descargarImagenes.CheckInternet()) {
+                if (!loadImagenes.CheckInternet()) {
                     bool tienePackCompletoEnPrefs = true;
                     for (int i = 0; i < 5; i++) {
-                        if (PlayerPrefs.GetString("puzzleGuardado" + (i - 1 + packsCargados * 5), "") == "") {
+                        if (PlayerPrefs.GetString("puzzleGuard" + (i - 1 + packsCargados * 5), "") == "") {
                             tienePackCompletoEnPrefs = false;
                         }
                     }
                     if (tienePackCompletoEnPrefs) {
-                        cargandoNuevoPack = true;
-                        descargarImagenes.CargarPack();
+                        loadNewPack = true;
+                        loadImagenes.LoadingPack();
                         botonContinue[packsCargados - 1].transform.GetChild(0).GetComponent<Animator>().enabled = true;
                     }
                     else {
@@ -271,22 +284,22 @@ public class ControlUI : MonoBehaviour {
                 else {
                     bool tienePackCompletoEnPrefs = true;
                     for (int i = 0; i < 5; i++) {
-                        if (PlayerPrefs.GetString("puzzleGuardado" + (i - 1 + packsCargados * 5), "") == "") {
+                        if (PlayerPrefs.GetString("puzzleGuard" + (i - 1 + packsCargados * 5), "") == "") {
                             tienePackCompletoEnPrefs = false;
                         }
                     }
                     if (tienePackCompletoEnPrefs) {
-                        cargandoNuevoPack = true;
-                        descargarImagenes.CargarPack();
+                        loadNewPack = true;
+                        loadImagenes.LoadingPack();
                         botonContinue[packsCargados - 1].transform.GetChild(0).GetComponent<Animator>().enabled = true;
                     }
-                    else if (!descargarImagenes.connectToWifi && !mensajeCheckeoWifi) {
+                    else if (!loadImagenes.connectToWifi && !mensajeCheckeoWifi) {
                         errorSFX.Play();
                         noticeDownload.gameObject.SetActive(true);
                     }
                     else {
-                        cargandoNuevoPack = true;
-                        descargarImagenes.CargarPack();
+                        loadNewPack = true;
+                        loadImagenes.LoadingPack();
                         botonContinue[packsCargados - 1].transform.GetChild(0).GetComponent<Animator>().enabled = true;
                     }
                 }
@@ -297,20 +310,20 @@ public class ControlUI : MonoBehaviour {
     public void AceptarDescargaWifi() {
         mensajeCheckeoWifi = true;
         if (packsCargados == 0) {
-            if (!descargarImagenes.connectInternet) {
-                cargandoNuevoPack = true;
-                descargarImagenes.CargarLista();
+            if (!loadImagenes.connectInternet) {
+                loadNewPack = true;
+                loadImagenes.LoadingList();
                 botonPlay.transform.GetChild(0).GetComponent<Animator>().enabled = true;
             }
             else {
-                cargandoNuevoPack = true;
-                descargarImagenes.CargarPack();
+                loadNewPack = true;
+                loadImagenes.LoadingPack();
                 botonPlay.transform.GetChild(0).GetComponent<Animator>().enabled = true;
             }
         }
         else {
-            cargandoNuevoPack = true;
-            descargarImagenes.CargarPack();
+            loadNewPack = true;
+            loadImagenes.LoadingPack();
             botonContinue[packsCargados - 1].transform.GetChild(0).GetComponent<Animator>().enabled = true;
         }
         clickSFX.Play();
@@ -318,7 +331,7 @@ public class ControlUI : MonoBehaviour {
     }
 
     public void CancelarDescargaWifi() {
-        cargandoNuevoPack = false;
+        loadNewPack = false;
         if (packsCargados > 0) {
             botonContinue[packsCargados - 1].transform.GetChild(0).GetComponent<Animator>().enabled = false;
             botonContinue[packsCargados - 1].transform.GetChild(0).GetChild(0).GetComponent<Text>().enabled = true;
@@ -336,9 +349,12 @@ public class ControlUI : MonoBehaviour {
         Invoke("MostrarNuevoPack", 0.2f);
     }
 
+    /// <summary>
+    /// 加载第二轮
+    /// </summary>
     void MostrarNuevoPack() {
         desplegarSFX.Play();
-        cargandoNuevoPack = false; //包已经加载
+        loadNewPack = false; //包已经加载
         if (packsCargados > 0) { //禁用上一个按钮
             botonContinue[packsCargados - 1].SetActive(false);
         }
@@ -407,14 +423,39 @@ public class ControlUI : MonoBehaviour {
         Color32[] pixels = imagenTex2D.GetPixels32();
         for (int x = 0; x < imagenTex2D.width; x++) {
             for (int y = 0; y < imagenTex2D.height; y++) {
+                //由于原数组是一维，所以要二维遍历需要简单转换下标
                 Color32 pixel = pixels[x + y * imagenTex2D.width];
-                int p = ((256 * 256 + pixel.r) * 256 + pixel.b) * 256 + pixel.g;
-                int b = p % 256;
-                p = Mathf.FloorToInt(p / 256);
-                int g = p % 256;
-                p = Mathf.FloorToInt(p / 256);
-                int r = p % 256;
-                float l = (0.2126f * r / 255f) + 0.7152f * (g / 255f) + 0.0722f * (b / 255f);
+                float l = (0.2126f * pixel.r / 255f) + 0.7152f * (pixel.g / 255f) + 0.0722f * (pixel.b / 255f);
+                Color c = new Color(l + lightness, l + lightness, l + lightness, 1); 
+                imagenTex2D.SetPixel(x, y, c);
+            }
+        }
+        imagenTex2D.Apply(true);
+        return imagenTex2D;
+    }
+
+    /// <summary>
+    /// 平均法
+    /// </summary>
+    /// <param name="imagenTex2D"></param>
+    /// <returns></returns>
+    Texture2D ConvertToGrayscale2(Texture2D imagenTex2D) {
+        float lightness = 0.0f;
+        Color32[] pixels = imagenTex2D.GetPixels32();
+        for (int x = 0; x < imagenTex2D.width; x++) {
+            for (int y = 0; y < imagenTex2D.height; y++) {
+                //由于原数组是一维，所以要二维遍历需要简单转换下标
+                Color32 pixel = pixels[x + y * imagenTex2D.width];
+                //float l = (0.2126f * pixel.r / 255f) + 0.7152f * (pixel.g / 255f) + 0.0722f * (pixel.b / 255f);
+                float l = (pixel.r + pixel.b + pixel.g) / 3;
+                //float l = pixel.b / 255;
+                //float l = Mathf.Max(pixel.r, pixel.b, pixel.g);
+                //l = l / 255;
+                if (l >= 127) {
+                    l = 1;
+                } else {
+                    l = 0;
+                }
                 Color c = new Color(l + lightness, l + lightness, l + lightness, 1); //
                 imagenTex2D.SetPixel(x, y, c);
             }
@@ -448,7 +489,7 @@ public class ControlUI : MonoBehaviour {
     /// </summary>
     public void CerrarAvisoTutorial() {
         clickSFX.Play();
-        PlayerPrefs.SetInt("yaUsoBotonSort", 1);
+        PlayerPrefs.SetInt("isFirstTime", 1);
         noticeTutorial.gameObject.SetActive(false);
     }
 
@@ -456,7 +497,7 @@ public class ControlUI : MonoBehaviour {
     /// 加载错误
     /// </summary>
     public void ErrorDuranteDescarga() {
-        cargandoNuevoPack = false;
+        loadNewPack = false;
         if (packsCargados > 0) {
             botonContinue[packsCargados - 1].transform.GetChild(0).GetComponent<Animator>().enabled = false;
             botonContinue[packsCargados - 1].transform.GetChild(0).GetChild(0).GetComponent<Text>().enabled = true;
@@ -478,25 +519,26 @@ public class ControlUI : MonoBehaviour {
 
     public void VolverAMenu() {
 #if PLATFORM_ANDROID
-        if (puedeMostrarAnuncioExtra && Advertisement.IsReady("rewardedVideo")) {
-            contadorTiempoAnuncio = 0;
-            puedeMostrarAnuncioExtra = false;
-            puedeMostrarAnuncio = false;
-            ShowRewardedAdExtra();
-        }
-        else if (puedeMostrarAnuncio && Advertisement.IsReady()) {
-            contadorTiempoAnuncio = 0;
-            puedeMostrarAnuncioExtra = false;
-            puedeMostrarAnuncio = false;
-            ShowAd();
-        }
+        //if (puedeMostrarAnuncioExtra && Advertisement.IsReady("rewardedVideo")) {
+        //    contadorTiempoAnuncio = 0;
+        //    puedeMostrarAnuncioExtra = false;
+        //    puedeMostrarAnuncio = false;
+        //    ShowRewardedAdExtra();
+        //}
+        //else if (puedeMostrarAnuncio && Advertisement.IsReady()) {
+        //    contadorTiempoAnuncio = 0;
+        //    puedeMostrarAnuncioExtra = false;
+        //    puedeMostrarAnuncio = false;
+        //    ShowAd();
+        //}
 #endif
         clickSFX.Play();
-        panelInit.SetActive(true);
-        panelSelection.SetActive(false);
-        panelPreGame.SetActive(false);
-        panelInGame.SetActive(false);
-        panelComplete.SetActive(false);
+        //panelInit.SetActive(true);
+        //panelSelection.SetActive(false);
+        //panelPreGame.SetActive(false);
+        //panelInGame.SetActive(false);
+        //panelComplete.SetActive(false);
+        this.ActiveUI("panelInit");
     }
 
 
@@ -504,7 +546,7 @@ public class ControlUI : MonoBehaviour {
         clickSFX.Play();
 
         int piezasColoreadas = 0;
-        int dificultadCompletada = CargarSaveDificultades(numImagen);
+        int dificultadCompletada = LoadSaveDifficulty(numImagen);
         if (numImagen == -1) {
             dificultadCompletada = 1;
             this.diyMode = true;//自定义图片
@@ -536,8 +578,9 @@ public class ControlUI : MonoBehaviour {
         if (ultimoNumImagen != numImagen) {
             //Debug.Log("excute here");
             puzzlePreseleccionado = numImagen;
+            //Debug.Log(this.diyMode);
             if (this.diyMode) {
-                Texture tex = this.descargarImagenes.diyPuzzleImage;
+                Texture tex = this.loadImagenes.diyPuzzleImage;
                 spritePreseleccionado = ConversionRapidaASprite(tex);
 
                 Texture2D texturaColor = Instantiate(tex) as Texture2D;
@@ -547,14 +590,14 @@ public class ControlUI : MonoBehaviour {
                 Sprite imagenEnGris = ConversionRapidaASprite(ConvertToGrayscale(texturaGrises));
                 diyImageColor = imagenAColor;
                 diyImageGray = imagenEnGris;
-
+                //Debug.Log("Test Here!");
             }
             else {
-                spritePreseleccionado = ConversionRapidaASprite(descargarImagenes.puzzleImageList[puzzlePreseleccionado]);
+                spritePreseleccionado = ConversionRapidaASprite(loadImagenes.puzzleImageList[puzzlePreseleccionado]);
 
                 if (imagenesAColor[numImagen] == null || imagenesEnGris[numImagen] == null) {
-                    Texture2D texturaColor = Instantiate(descargarImagenes.puzzleImageList[numImagen]) as Texture2D;
-                    Texture2D texturaGrises = Instantiate(descargarImagenes.puzzleImageList[numImagen]) as Texture2D;
+                    Texture2D texturaColor = Instantiate(loadImagenes.puzzleImageList[numImagen]) as Texture2D;
+                    Texture2D texturaGrises = Instantiate(loadImagenes.puzzleImageList[numImagen]) as Texture2D;
 
                     Sprite imagenAColor = ConversionRapidaASprite(texturaColor);
                     Sprite imagenEnGris = ConversionRapidaASprite(ConvertToGrayscale(texturaGrises));
@@ -565,17 +608,18 @@ public class ControlUI : MonoBehaviour {
         }
 
         if (this.diyMode) {
-
             for (int i = 0; i < pedazoVistaPrevia.Length; i++) {
-                if (i < piezasColoreadas) {
-                    pedazoVistaPrevia[i].sprite = diyImageColor;
-                }
-                else {
-                    pedazoVistaPrevia[i].sprite = diyImageGray;
-                }
+                //if (i < piezasColoreadas) {
+                //    pedazoVistaPrevia[i].sprite = diyImageColor;
+                //}
+                //else {
+                //    pedazoVistaPrevia[i].sprite = diyImageGray;
+                //}
+                //自定义图片默认全难度通关
+                pedazoVistaPrevia[i].sprite = diyImageColor;
             }
-        }
-        else {
+            //Debug.Log(diyImageColor.name);
+        } else {
             for (int i = 0; i < pedazoVistaPrevia.Length; i++) {
                 if (i < piezasColoreadas) {
                     pedazoVistaPrevia[i].sprite = imagenesAColor[numImagen];
@@ -587,16 +631,17 @@ public class ControlUI : MonoBehaviour {
         }
 
 
-        panelInit.SetActive(false);
-        panelSelection.SetActive(true);
-        panelPreGame.SetActive(false);
-        panelInGame.SetActive(false);
-        panelComplete.SetActive(false);
+        //panelInit.SetActive(false);
+        //panelSelection.SetActive(true);
+        //panelPreGame.SetActive(false);
+        //panelInGame.SetActive(false);
+        //panelComplete.SetActive(false);
+        this.ActiveUI("panelSelection");
 
-        ultimoNumImagen = numImagen;
+        ultimoNumImagen = numImagen == -1 ? -2 : numImagen;
     }
 
-    int CargarSaveDificultades(int numImagen) {
+    int LoadSaveDifficulty(int numImagen) {
         int dificultadCompletada = PlayerPrefs.GetInt("puzzleCompleto" + numImagen, 0);
         for (int i = 0; i < tickDificultad.Length; i++) {
             if (i < dificultadCompletada) {
@@ -616,7 +661,7 @@ public class ControlUI : MonoBehaviour {
     public void IniciarPuzzle(int dificultadSeleccionada) {
         Debug.Log("现在的难度等级为" + dificultadSeleccionada);
         clickSFX.Play();
-        ultimaDificultadSeleccionada = dificultadSeleccionada;
+        theLastDifficultySelection = dificultadSeleccionada;
         Vector3 posicionPuzzle = Vector3.zero;
         switch (dificultadSeleccionada) {
             case 0:
@@ -636,106 +681,114 @@ public class ControlUI : MonoBehaviour {
                 break;
         }
 
-        GameObject nuevoPuzzle = Instantiate(prefabsPuzzle[dificultadSeleccionada], posicionPuzzle, prefabsPuzzle[dificultadSeleccionada].transform.rotation) as GameObject;
-        nuevoPuzzle.name = prefabsPuzzle[dificultadSeleccionada].name; //我们从名称中删除“（克隆）”
-        this.nuevoPuzzle = nuevoPuzzle;
-        panelInit.SetActive(false);
-        panelSelection.SetActive(false);
-        panelPreGame.SetActive(true);
-        panelInGame.SetActive(false);
-        panelComplete.SetActive(false);
-        CargarTextura();
+        GameObject newPuzzle = Instantiate(prefabsPuzzle[dificultadSeleccionada], posicionPuzzle, prefabsPuzzle[dificultadSeleccionada].transform.rotation) as GameObject;
+        newPuzzle.name = prefabsPuzzle[dificultadSeleccionada].name; //我们从名称中删除“（克隆）”
+        this.newPuzzle = newPuzzle;
+        //panelInit.SetActive(false);
+        //panelSelection.SetActive(false);
+        //panelPreGame.SetActive(true);
+        //panelInGame.SetActive(false);
+        //panelComplete.SetActive(false);
+        this.ActiveUI("panelPreGame");
+        LoadTexture();
         PonerMiniaturaDeAyuda();
     }
 
     /// <summary>
-    /// 这里就是把图片碎片化
+    /// 图片碎片化
     /// </summary>
-    void CargarTextura() {
+    void LoadTexture() {
         GameObject[] piezasPuzzle = GameObject.FindGameObjectsWithTag("PiezaPuzzle");
         if (this.diyMode) {
             for (int i = 0; i < piezasPuzzle.Length; i++) {
-                piezasPuzzle[i].GetComponent<Renderer>().material.mainTexture = this.descargarImagenes.diyPuzzleImage;
+                piezasPuzzle[i].GetComponent<Renderer>().material.mainTexture = this.loadImagenes.diyPuzzleImage;
             }
         }
         else {
             for (int i = 0; i < piezasPuzzle.Length; i++) {
-                piezasPuzzle[i].GetComponent<Renderer>().material.mainTexture = descargarImagenes.puzzleImageList[puzzlePreseleccionado];
+                piezasPuzzle[i].GetComponent<Renderer>().material.mainTexture = loadImagenes.puzzleImageList[puzzlePreseleccionado];
             }
         }
     }
 
     public void StartPuzzle() {
         //获取碎片控制组件
-        MoverPiezas moverPiezas = this.gameObject.GetComponent<MoverPiezas>();
-        moverPiezas.juntarPiezas = GameObject.FindGameObjectWithTag("MatrizPuzzle").GetComponent<JuntarPiezas>();
+        MovePieces moverPiezas = this.gameObject.GetComponent<MovePieces>();
+        moverPiezas.assemblePieces = GameObject.FindGameObjectWithTag("MatrizPuzzle").GetComponent<AssemblePieces>();
         DesactivarAyudaBG();
-        DesordenarPiezas(nuevoPuzzle.transform); //随机碎片
+        DesordenarPiezas(newPuzzle.transform); //随机碎片
         horaInicio = Time.time;
-        panelInit.SetActive(false);
-        panelSelection.SetActive(false);
-        panelPreGame.SetActive(false);
-        panelInGame.SetActive(true);
-        panelComplete.SetActive(false);
-        Invoke("ActivarControles", 0.5f);
-        if (PlayerPrefs.GetInt("yaUsoBotonSort", 0) == 0) {
+        //panelInit.SetActive(false);
+        //panelSelection.SetActive(false);
+        //panelPreGame.SetActive(false);
+        //panelInGame.SetActive(true);
+        //panelComplete.SetActive(false);
+        this.ActiveUI("panelInGame");
+        Invoke("ActiveController", 0.5f);
+        if (PlayerPrefs.GetInt("isFirstTime", 0) == 0) {
             Invoke("ActivarAvisoTutorial", 10);
         }
-        analiticas.DificultadSeleccionada(ultimaDificultadSeleccionada + 1);
+        analiticas.DificultadSeleccionada(theLastDifficultySelection + 1);
         analiticas.PuzzleSeleccionado(puzzlePreseleccionado);
     }
 
-    void ActivarControles() {
-        MoverPiezas moverPiezas = this.gameObject.GetComponent<MoverPiezas>();
+    void ActiveController() {
+        MovePieces moverPiezas = this.gameObject.GetComponent<MovePieces>();
         moverPiezas.puzzlePlaying = true;
     }
 
-    void DesordenarPiezas(Transform nuevoPuzzle) { //随机碎片
-        this.gameObject.GetComponent<MoverPiezas>().posicionZ = 0.0f;
-        List<int> listaProfundidades = new List<int>();
-        int profundidad = 0;
-        foreach (Transform hijo in nuevoPuzzle) {
-            profundidad = Random.Range(-nuevoPuzzle.childCount, 0);
-            while (listaProfundidades.Contains(profundidad)) {
-                profundidad++;
-                if (profundidad > 0) {
-                    profundidad = -nuevoPuzzle.childCount;
+    void DesordenarPiezas(Transform newPuzzle) { //随机碎片
+        this.gameObject.GetComponent<MovePieces>().positionZ = 0.0f;
+        List<int> listaprofoundes = new List<int>();
+        int profound = 0;
+        foreach (Transform son in newPuzzle) {
+            profound = Random.Range(-newPuzzle.childCount, 0);
+            while (listaprofoundes.Contains(profound)) {
+                profound++;
+                if (profound > 0) {
+                    profound = -newPuzzle.childCount;
                 }
             }
-            listaProfundidades.Add(profundidad);
-            StartCoroutine(LerpHijo(hijo, profundidad * 0.001f, 2.25f));
+            listaprofoundes.Add(profound);
+            StartCoroutine(Lerpson(son, profound * 0.001f, 2.25f));
         }
         barajarSFX.Play();
     }
-
-    IEnumerator LerpHijo(Transform pieza, float profundidad, float velocidadRecogida) {
-        Vector3 posInicial = pieza.position;
-        Vector3 posFinal = new Vector3(Random.Range(-2.6f, 2.6f), Random.Range(5.2f, 5.5f), profundidad);
+    /// <summary>
+    /// 线性插入子节点
+    /// </summary>
+    /// <param name="piece"></param>
+    /// <param name="profound"></param>
+    /// <param name="pieceVelocity"></param>
+    /// <returns></returns>
+    IEnumerator Lerpson(Transform piece, float profound, float pieceVelocity) {
+        Vector3 posInicial = piece.position;
+        Vector3 posFinal = new Vector3(Random.Range(-2.6f, 2.6f), Random.Range(5.2f, 5.5f), profound);
         float t = 0;
         while (t < 0.5f) {
-            t += velocidadRecogida * Time.deltaTime;
-            pieza.position = Vector3.Lerp(posInicial, posFinal, t * 2);
+            t += pieceVelocity * Time.deltaTime;
+            piece.position = Vector3.Lerp(posInicial, posFinal, t * 2);
             yield return null;
         }
         yield return null;
     }
 
     public void OrdenarPiezasRestantes() {
-        this.gameObject.GetComponent<MoverPiezas>().posicionZ = 0.0f;
-        PlayerPrefs.SetInt("yaUsoBotonSort", 1);
-        List<int> listaProfundidades = new List<int>();
-        int profundidad = 0;
-        foreach (Transform hijo in nuevoPuzzle.transform) {
-            if (hijo.tag != "PiezaColocada") {
-                profundidad = Random.Range(-nuevoPuzzle.transform.childCount, 0);
-                while (listaProfundidades.Contains(profundidad)) {
-                    profundidad++;
-                    if (profundidad > 0) {
-                        profundidad = -nuevoPuzzle.transform.childCount;
+        this.gameObject.GetComponent<MovePieces>().positionZ = 0.0f;
+        PlayerPrefs.SetInt("isFirstTime", 1);
+        List<int> listaprofoundes = new List<int>();
+        int profound = 0;
+        foreach (Transform son in newPuzzle.transform) {
+            if (son.tag != "PiezaColocada") {
+                profound = Random.Range(-newPuzzle.transform.childCount, 0);
+                while (listaprofoundes.Contains(profound)) {
+                    profound++;
+                    if (profound > 0) {
+                        profound = -newPuzzle.transform.childCount;
                     }
                 }
-                listaProfundidades.Add(profundidad);
-                StartCoroutine(LerpHijo(hijo, profundidad * 0.001f, 5));
+                listaprofoundes.Add(profound);
+                StartCoroutine(Lerpson(son, profound * 0.001f, 5));
             }
         }
         barajarSFX.Play();
@@ -746,7 +799,7 @@ public class ControlUI : MonoBehaviour {
         if (yaPidioSepararPiezas) {
             SepararPiezasDeBordeAceptado();
         }
-        else if (descargarImagenes.CheckInternet()) {
+        else if (loadImagenes.CheckInternet()) {
 #if PLATFORM_ANDROID
             //if (Advertisement.IsReady("rewardedVideo")) {
             //    ShowRewardedAdSepararPiezas();
@@ -767,24 +820,24 @@ public class ControlUI : MonoBehaviour {
     }
 
     void SepararPiezasDeBordeAceptado() {
-        PlayerPrefs.SetInt("yaUsoBotonSort", 1);
-        yaPidioSepararPiezas = true;
+        PlayerPrefs.SetInt("isFirstTime", 1);
+        yaPidioSepararPiezas = true; 
         if (!IsInvoking("ReiniciarYaPidioSepararPiezas")) {
             Invoke("ReiniciarYaPidioSepararPiezas", 300); //5 minutos
         }
-        List<int> listaProfundidades = new List<int>();
-        int profundidad = 0;
-        foreach (Transform hijo in nuevoPuzzle.transform) {
-            if (hijo.tag != "PiezaColocada") {
-                profundidad = Random.Range(-nuevoPuzzle.transform.childCount, 0);
-                while (listaProfundidades.Contains(profundidad)) {
-                    profundidad++;
-                    if (profundidad > 0) {
-                        profundidad = -nuevoPuzzle.transform.childCount;
+        List<int> listaprofoundes = new List<int>();
+        int profound = 0;
+        foreach (Transform son in newPuzzle.transform) {
+            if (son.tag != "PiezaColocada") {
+                profound = Random.Range(-newPuzzle.transform.childCount, 0);
+                while (listaprofoundes.Contains(profound)) {
+                    profound++;
+                    if (profound > 0) {
+                        profound = -newPuzzle.transform.childCount;
                     }
                 }
-                listaProfundidades.Add(profundidad);
-                StartCoroutine(LerpHijoBordes(hijo, profundidad * 0.001f, 5));
+                listaprofoundes.Add(profound);
+                StartCoroutine(LerpsonBordes(son, profound * 0.001f, 5));
             }
         }
         barajarSFX.Play();
@@ -793,32 +846,34 @@ public class ControlUI : MonoBehaviour {
     }
 
     /// <summary>
-    /// 
+    /// 打乱移动
     /// </summary>
     /// <param name="pieza">碎片</param>
-    /// <param name="profundidad">深度</param>
-    /// <param name="velocidadRecogida">速度集</param>
+    /// <param name="profound">深度</param>
+    /// <param name="pieceVelocity">速度集</param>
     /// <returns></returns>
-    IEnumerator LerpHijoBordes(Transform pieza, float profundidad, float velocidadRecogida) {
+    IEnumerator LerpsonBordes(Transform pieza, float profound, float pieceVelocity) {
         Vector3 posInicial = pieza.position;
         Vector3 posFinal;
 
-        string dimensionesPuzzle = nuevoPuzzle.name.Substring(5, nuevoPuzzle.name.Length - 5);
+        string dimensionesPuzzle = newPuzzle.name.Substring(5, newPuzzle.name.Length - 5);
         string[] dosDimensiones = dimensionesPuzzle.Split('x');
         int anchoPuzzle = int.Parse(dosDimensiones[0]) - 1;
         int altoPuzzle = int.Parse(dosDimensiones[1]) - 1;
 
         if (pieza.name.Contains("_0x") || pieza.name.Contains("x0") || pieza.name.Contains("x" + anchoPuzzle) || pieza.name.Contains("_" + altoPuzzle + "x")) {
-            posFinal = new Vector3(Random.Range(-2.6f, -1), Random.Range(5.2f, 5.5f), profundidad);
+            posFinal = new Vector3(Random.Range(-2.6f, -1), Random.Range(5.2f, 5.5f), profound);
         }
         else {
-            posFinal = new Vector3(Random.Range(1, 2.6f), Random.Range(5.2f, 5.5f), profundidad);
+            posFinal = new Vector3(Random.Range(1, 2.6f), Random.Range(5.2f, 5.5f), profound);
         }
 
+        //查看父节点
+        //Debug.Log("拼图碎片父节点名称为：" + pieza.parent.name);
 
         float t = 0;
         while (t < 0.5f) {
-            t += velocidadRecogida * Time.deltaTime;
+            t += pieceVelocity * Time.deltaTime;
             pieza.position = Vector3.Lerp(posInicial, posFinal, t * 2);
             yield return null;
         }
@@ -828,10 +883,10 @@ public class ControlUI : MonoBehaviour {
     public void VolverDesdePuzzle(bool confirmacion) {
         clickSFX.Play();
         if (confirmacion) {
-            MoverPiezas moverPiezas = this.gameObject.GetComponent<MoverPiezas>();
+            MovePieces moverPiezas = this.gameObject.GetComponent<MovePieces>();
             moverPiezas.puzzlePlaying = false;
-            if (nuevoPuzzle != null) {
-                Destroy(nuevoPuzzle);
+            if (newPuzzle != null) {
+                Destroy(newPuzzle);
             }
             SeleccionarImagen(puzzlePreseleccionado);
         }
@@ -862,7 +917,7 @@ public class ControlUI : MonoBehaviour {
             clickSFX.Play();
             ActivarAyudaBackgroundAceptado();
         }
-        else if (descargarImagenes.CheckInternet()) {
+        else if (loadImagenes.CheckInternet()) {
             clickSFX.Play();
 #if PLATFORM_ANDROID
             //if (Advertisement.IsReady("rewardedVideo")) {
@@ -904,7 +959,7 @@ public class ControlUI : MonoBehaviour {
         menuIngameActivado = !menuIngameActivado;
         botonMenuInvisible.gameObject.SetActive(menuIngameActivado);
 
-        MoverPiezas moverPiezas = this.gameObject.GetComponent<MoverPiezas>();
+        MovePieces moverPiezas = this.gameObject.GetComponent<MovePieces>();
         moverPiezas.puzzlePlaying = !menuIngameActivado;
 
         if (menuIngameActivado) {
@@ -921,6 +976,11 @@ public class ControlUI : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// 游戏内菜单显示
+    /// </summary>
+    /// <param name="mostrarMenu"></param>
+    /// <returns></returns>
     IEnumerator DesplazarMenuInGame(bool mostrarMenu) {
 
         RectTransform panelRect = panelInGame.GetComponent<RectTransform>();
@@ -931,16 +991,18 @@ public class ControlUI : MonoBehaviour {
         float posOcultoTop = -603;
 
         float transicion = (mostrarMenu) ? 0 : 1;
-        float velocidadTransicion = 5;
+        float menuVelocity = 5;
 
-
+        AnimationCurve ac = this.panelInGame.GetComponent<ExAction>().anim;
 
         while (transicion >= 0 && transicion <= 1) {
             if (mostrarMenu) {
-                transicion += Time.deltaTime * velocidadTransicion;
+                transicion += menuVelocity * Time.deltaTime;
+                menuVelocity *= 0.92f;//缓冲动作
             }
             else {
-                transicion -= Time.deltaTime * velocidadTransicion;
+                transicion -= menuVelocity * Time.deltaTime;
+                menuVelocity *= 0.92f;//缓冲动作
             }
             flechitaMenuInGame.anchoredPosition = new Vector2(0, Mathf.Lerp(15, 10, transicion));
             panelRect.offsetMin = new Vector2(0, Mathf.Lerp(posOcultoBottom, posMostradoBottom, transicion));
@@ -960,11 +1022,12 @@ public class ControlUI : MonoBehaviour {
     }
 
     public void ActivarPanelCompleto() {
-        panelInit.SetActive(false);
-        panelSelection.SetActive(false);
-        panelPreGame.SetActive(false);
-        panelInGame.SetActive(false);
-        panelComplete.SetActive(true);
+        //panelInit.SetActive(false);
+        //panelSelection.SetActive(false);
+        //panelPreGame.SetActive(false);
+        //panelInGame.SetActive(false);
+        //panelComplete.SetActive(true);
+        this.ActiveUI("panelComplete");
         tiempoEnPuzzle = Mathf.RoundToInt(Time.time - horaInicio);
 
         string horas = "";
@@ -987,50 +1050,77 @@ public class ControlUI : MonoBehaviour {
         string letraTiempo = (tiempoEnPuzzle < 3600) ? "m" : "";
         letraTiempo = (tiempoEnPuzzle < 60) ? "s" : letraTiempo;
         if (Application.systemLanguage.ToString() == "Spanish") {
-            completeInfo.text = "Nivel de dificultad: " + (ultimaDificultadSeleccionada + 1).ToString() + "\n\nTiempo: " + horas + minutos + segundos + letraTiempo;
+            completeInfo.text = "Nivel de dificultad: " + (theLastDifficultySelection + 1).ToString() + "\n\nTiempo: " + horas + minutos + segundos + letraTiempo;
         }
         else {
-            completeInfo.text = "Difficulty level: " + (ultimaDificultadSeleccionada + 1).ToString() + "\n\nTime: " + horas + minutos + segundos + letraTiempo;
+            completeInfo.text = "Difficulty level: " + (theLastDifficultySelection + 1).ToString() + "\n\nTime: " + horas + minutos + segundos + letraTiempo;
         }
 
-        analiticas.DificultadCompletada(ultimaDificultadSeleccionada + 1);
+        analiticas.DificultadCompletada(theLastDifficultySelection + 1);
     }
 
     public void VolverAMenuTrasCompletar() {
         clickSFX.Play();
-        MoverPiezas moverPiezas = this.gameObject.GetComponent<MoverPiezas>();
+        MovePieces moverPiezas = this.gameObject.GetComponent<MovePieces>();
         moverPiezas.puzzlePlaying = false;
-        if (nuevoPuzzle != null) {
-            Destroy(nuevoPuzzle);
+        if (newPuzzle != null) {
+            Destroy(newPuzzle);
         }
         SeleccionarImagen(puzzlePreseleccionado);
 
         //颜色，如果你刚刚完成困难
         if (this.diyMode) {
-
+            //nothing to do
         }
         else {
             contornoBoton[puzzlePreseleccionado].color = colorDificultad[PlayerPrefs.GetInt("puzzleCompleto" + puzzlePreseleccionado, 0)];
             if (PlayerPrefs.GetInt("puzzleCompleto" + puzzlePreseleccionado, 0) == 5) {
-                TexturaABoton(puzzlePreseleccionado, descargarImagenes.puzzleImageList[puzzlePreseleccionado]);
+                TexturaABoton(puzzlePreseleccionado, loadImagenes.puzzleImageList[puzzlePreseleccionado]);
             }
         }
 
 #if PLATFORM_ANDROID
-        if (puedeMostrarAnuncioExtra && Advertisement.IsReady("rewardedVideo")) {
-            contadorTiempoAnuncio = 0;
-            puedeMostrarAnuncioExtra = false;
-            puedeMostrarAnuncio = false;
-            ShowRewardedAdExtra();
-        }
-        else if (puedeMostrarAnuncio && Advertisement.IsReady()) {
-            contadorTiempoAnuncio = 0;
-            puedeMostrarAnuncioExtra = false;
-            puedeMostrarAnuncio = false;
-            ShowAd();
-        }
+        //if (puedeMostrarAnuncioExtra && Advertisement.IsReady("rewardedVideo")) {
+        //    contadorTiempoAnuncio = 0;
+        //    puedeMostrarAnuncioExtra = false;
+        //    puedeMostrarAnuncio = false;
+        //    ShowRewardedAdExtra();
+        //}
+        //else if (puedeMostrarAnuncio && Advertisement.IsReady()) {
+        //    contadorTiempoAnuncio = 0;
+        //    puedeMostrarAnuncioExtra = false;
+        //    puedeMostrarAnuncio = false;
+        //    ShowAd();
+        //}
 #endif
-        panelInit.SetActive(true);
+        //panelInit.SetActive(true);
+        //panelSelection.SetActive(false);
+        //panelPreGame.SetActive(false);
+        //panelInGame.SetActive(false);
+        //panelComplete.SetActive(false);
+        this.ActiveUI("panelInit");
+    }
+
+    void ActiveUI(string UIName) {
+        //先关闭所有UI场景
+        this.ShutDownAllUI();
+        if (UIName == "panelInit") {
+            this.panelInit.SetActive(true);
+        } else if (UIName == "panelSelection") {
+            this.panelSelection.SetActive(true);
+        } else if (UIName == "panelPreGame") {
+            this.panelPreGame.SetActive(true);
+        } else if (UIName == "panelInGame") {
+            this.panelInGame.SetActive(true);
+        } else if (UIName == "panelComplete") {
+            this.panelComplete.SetActive(true);
+        } else {
+            Debug.Log("Here has some wrong things!");
+        }
+    }
+
+    void ShutDownAllUI() {
+        panelInit.SetActive(false);
         panelSelection.SetActive(false);
         panelPreGame.SetActive(false);
         panelInGame.SetActive(false);
@@ -1133,18 +1223,18 @@ public class ControlUI : MonoBehaviour {
     /// </summary>
     void ActualizarBotonesPause() {
 #if PLATFORM_ANDROID
-        if (yaPidioSepararPiezas) {
-            tickSort.SetActive(false);
-        }
-        else {
-            tickSort.SetActive(true);
-        }
-        if (!yaPidioAyudaBackground && !ayudaActivada) {
-            tickGuia.SetActive(true);
-        }
-        else {
-            tickGuia.SetActive(false);
-        }
+        //if (yaPidioSepararPiezas) {
+        //    tickSort.SetActive(false);
+        //}
+        //else {
+        //    tickSort.SetActive(true);
+        //}
+        //if (!yaPidioAyudaBackground && !ayudaActivada) {
+        //    tickGuia.SetActive(true);
+        //}
+        //else {
+        //    tickGuia.SetActive(false);
+        //}
 #else
 			tickSort.SetActive (false);
 			tickGuia.SetActive (false);

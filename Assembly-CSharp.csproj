@@ -62,25 +62,27 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Puzzle\Scripts\Analiticas.cs" />
+    <Compile Include="Assets\Puzzle\Scripts\AssemblePieces.cs" />
     <Compile Include="Assets\Puzzle\Scripts\ControlUI.cs" />
-    <Compile Include="Assets\Puzzle\Scripts\DescargarImagenes.cs" />
-    <Compile Include="Assets\Puzzle\Scripts\JuntarPiezas.cs" />
+    <Compile Include="Assets\Puzzle\Scripts\ExAction.cs" />
     <Compile Include="Assets\Puzzle\Scripts\LanguageSetting.cs" />
+    <Compile Include="Assets\Puzzle\Scripts\LoadImagenes.cs" />
     <Compile Include="Assets\Puzzle\Scripts\LoadShapeShadow.cs" />
-    <Compile Include="Assets\Puzzle\Scripts\MoverPiezas.cs" />
+    <Compile Include="Assets\Puzzle\Scripts\MovePieces.cs" />
     <Compile Include="Assets\Puzzle\Scripts\OpenFileName.cs" />
     <None Include="Assets\Puzzle\_EDITABLE\ImagesURL.txt" />
+    <None Include="Assets\Puzzle\PuzzlePieces\Materials\NewUnlitShader.shader" />
     <Reference Include="UnityEditor.StandardEvents">
-      <HintPath>C:/Users/馒头世界/Desktop/TinyGame/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>
+      <HintPath>C:/Users/馒头世界/Desktop/毕设相关/TinyGame/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro.Editor">
-      <HintPath>C:/Users/馒头世界/Desktop/TinyGame/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
+      <HintPath>C:/Users/馒头世界/Desktop/毕设相关/TinyGame/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.PackageManagerUI.Editor">
-      <HintPath>C:/Users/馒头世界/Desktop/TinyGame/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
+      <HintPath>C:/Users/馒头世界/Desktop/毕设相关/TinyGame/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>C:/Users/馒头世界/Desktop/TinyGame/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
+      <HintPath>C:/Users/馒头世界/Desktop/毕设相关/TinyGame/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AIModule">
       <HintPath>D:/File/unity/Editor/Data/Managed/UnityEngine/UnityEngine.AIModule.dll</HintPath>

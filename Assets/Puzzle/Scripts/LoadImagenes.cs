@@ -6,7 +6,7 @@ using UnityEngine.UI;
 /// <summary>
 /// 图像下载模块
 /// </summary>
-public class DescargarImagenes : MonoBehaviour {
+public class LoadImagenes : MonoBehaviour {
 
     public bool imageAddMode = false;
     public string addAddr = null;
@@ -115,19 +115,19 @@ public class DescargarImagenes : MonoBehaviour {
     /// <summary>
     /// 加载图像列表
     /// </summary>
-	public void CargarLista() {
+	public void LoadingList() {
         if (!downLoadPack) {
             //downLoadPack = true;
             //启动协程加载图像列表
             //StartCoroutine(DescargarLista());
-            CargarPack();
+            LoadingPack();
         }
     }
 
     /// <summary>
     /// 加载资源包
     /// </summary>
-	public void CargarPack() {
+	public void LoadingPack() {
         if (!connectInternet) {
             connectInternet = true;
             string listaBrutaEnlaces = this.textURL.text;
@@ -165,34 +165,34 @@ public class DescargarImagenes : MonoBehaviour {
     /// <summary>
     /// 加载本地缓存图像
     /// </summary>
-    /// <param name="numeroPuzzle"></param>
+    /// <param name="numberPuzzle"></param>
     /// <returns></returns>
-	Texture2D CargarImagenPlayerPrefs(int numeroPuzzle) {
-        string puzzleGuardado = PlayerPrefs.GetString("puzzleGuardado" + numeroPuzzle, "");
-        Texture2D texturaCargada = ReadTextureFromPlayerPrefs(numeroPuzzle);
-        return texturaCargada;
+	Texture2D LoadImagenPlayerPrefs(int numberPuzzle) {
+        string puzzleGuard = PlayerPrefs.GetString("puzzleGuard" + numberPuzzle, "");
+        Texture2D tex = ReadTextureFromPlayerPrefs(numberPuzzle);
+        return tex;
     }
 
     /// <summary>
     /// 将纹理写入本地缓存
     /// </summary>
-    /// <param name="numeroPuzzle"></param>
+    /// <param name="numberPuzzle"></param>
     /// <param name="tex"></param>
-	void WriteTextureToPlayerPrefs(int numeroPuzzle, Texture2D tex) {
+	void WriteTextureToPlayerPrefs(int numberPuzzle, Texture2D tex) {
         byte[] texByte = tex.EncodeToJPG();
         string base64Tex = System.Convert.ToBase64String(texByte);
-        PlayerPrefs.SetString("puzzleGuardado" + numeroPuzzle, base64Tex);
+        PlayerPrefs.SetString("puzzleGuard" + numberPuzzle, base64Tex);
         PlayerPrefs.Save();
-        Debug.Log("Imagen " + numeroPuzzle + " guardada");
+        Debug.Log("Imagen " + numberPuzzle + " guard");
     }
 
     /// <summary>
     /// 在本地缓存中读取纹理
     /// </summary>
-    /// <param name="numeroPuzzle"></param>
+    /// <param name="numberPuzzle"></param>
     /// <returns></returns>
-	Texture2D ReadTextureFromPlayerPrefs(int numeroPuzzle) {
-        string base64Tex = PlayerPrefs.GetString("puzzleGuardado" + numeroPuzzle, null);
+	Texture2D ReadTextureFromPlayerPrefs(int numberPuzzle) {
+        string base64Tex = PlayerPrefs.GetString("puzzleGuard" + numberPuzzle, null);
         if (!string.IsNullOrEmpty(base64Tex)) {
             byte[] texByte = System.Convert.FromBase64String(base64Tex);
             Texture2D tex = new Texture2D(2, 2);
@@ -211,7 +211,7 @@ public class DescargarImagenes : MonoBehaviour {
         wwwRemoteImages = new WWW(puzzleImageURL + "?t=" + Random.Range(0, 1000));
         StartCoroutine(LimiteTiempoDescargaLista());
         yield return wwwRemoteImages;
-        CargarPack();
+        LoadingPack();
     }
 
 
@@ -220,7 +220,7 @@ public class DescargarImagenes : MonoBehaviour {
 
         //如果你开始离线，没有列表，这里有互联网下载
         if (!connectInternet && CheckInternet()) {
-            CargarLista();
+            LoadingList();
             yield break;
         }
 
@@ -235,7 +235,7 @@ public class DescargarImagenes : MonoBehaviour {
             if (i > countPuzzlesTotal - 1) {
                 break;
             }
-            if (CheckInternet() && PlayerPrefs.GetString("puzzleGuardado" + i, "") == "") {
+            if (CheckInternet() && PlayerPrefs.GetString("puzzleGuard" + i, "") == "") {
                 remoteImageList[i] = remoteImageList[i].Trim();
                 wwwImage[i] = new WWW(remoteImageList[i]);
                 StartCoroutine(LimiteTiempoDescarga(i));
@@ -263,8 +263,8 @@ public class DescargarImagenes : MonoBehaviour {
                 controlUI.TexturaABoton(i, puzzleImageList[i]);
             }
             else {
-                if (PlayerPrefs.GetString("puzzleGuardado" + i, "") != "") {
-                    puzzleImageList.Add(CargarImagenPlayerPrefs(i));
+                if (PlayerPrefs.GetString("puzzleGuard" + i, "") != "") {
+                    puzzleImageList.Add(LoadImagenPlayerPrefs(i));
 
                     Debug.Log("Image " + i + " loaded from prefs.");
                     controlUI.TexturaABoton(i, puzzleImageList[i]);
